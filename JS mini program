@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hot and Cold Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    #game { max-width: 600px; margin: auto; }
+    #log { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+    button { margin: 5px; padding: 10px; }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <h1>Hot and Cold Game</h1>
+    <p>Current Guess: <span id="currentGuess">50</span></p>
+    <p>Guesses Remaining: <span id="guessesRemaining">5</span></p>
+    <div>
+      <button onclick="adjustGuess(-25)">-25</button>
+      <button onclick="adjustGuess(-10)">-10</button>
+      <button onclick="adjustGuess(-5)">-5</button>
+      <button onclick="adjustGuess(-1)">-1</button>
+      <button onclick="adjustGuess(1)">+1</button>
+      <button onclick="adjustGuess(5)">+5</button>
+      <button onclick="adjustGuess(10)">+10</button>
+      <button onclick="adjustGuess(25)">+25</button>
+    </div>
+    <button onclick="makeGuess()">Commit</button>
+    <button onclick="resetGame()">Reset</button>
+    <div id="log"></div>
+    <p id="resultMessage"></p>
+  </div>
+
+  <script>
+    let target = Math.floor(Math.random() * 100) + 1;
+    let guessesRemaining = 5;
+    let currentGuess = 50;
+    let guessLog = [];
+
+    function updateDisplay() {
+      document.getElementById("currentGuess").textContent = currentGuess;
+      document.getElementById("guessesRemaining").textContent = guessesRemaining;
+      document.getElementById("log").innerHTML = guessLog.join("<br>");
+    }
+
+    function adjustGuess(amount) {
+      let newGuess = currentGuess + amount;
+      if (newGuess >= 1 && newGuess <= 100) {
+        currentGuess = newGuess;
+        updateDisplay();
+      }
+    }
+
+    function makeGuess() {
+      if (guessesRemaining <= 0) {
+        document.getElementById("resultMessage").textContent = "No guesses remaining. Reset the game to try again.";
+        return;
+      }
+
+      let distance = Math.abs(target - currentGuess);
+      let response = getHotColdResponse(distance);
+
+      // 5% chance of lying
+      if (Math.random() < 0.05) {
+        response = getRandomLieResponse();
+      }
+
+      guessLog.push(`Guess: ${currentGuess} - ${response}`);
+      
+      if (distance === 0) {
+        document.getElementById("resultMessage").textContent = "You found the number! Congratulations!";
+        saveStatistics();
+        return;
+      } else if (response !== "Very Hot") {
+        guessesRemaining--;
+      }
+
+      if (guessesRemaining === 0) {
+        document.getElementById("resultMessage").textContent = `Game Over! The number was ${target}.`;
+        saveStatistics();
+      }
+
+      updateDisplay();
+    }
+
+    function resetGame() {
+      target = Math.floor(Math.random() * 100) + 1;
+      guessesRemaining = 5;
+      currentGuess = 50;
+      guessLog = [];
+      document.getElementById("resultMessage").textContent = "";
+      updateDisplay();
+    }
+
+    function getHotColdResponse(distance) {
+      if (distance <= 5) return "Very Hot";
+      else if (distance <= 8) return "Hot";
+      else if (distance <= 15) return "Very Warm";
+      else if (distance <= 20) return "Warm";
+      else if (distance <= 30) return "Cool";
+      else if (distance <= 40) return "Very Cool";
+      else if (distance <= 55) return "Cold";
+      else return "Very Cold";
+    }
+
+    function getRandomLieResponse() {
+      const responses = ["Very Hot", "Hot", "Very Warm", "Warm", "Cool", "Very Cool", "Cold", "Very Cold"];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    function saveStatistics() {
+      let gamesPlayed = localStorage.getItem("gamesPlayed") || 0;
+      gamesPlayed++;
+      localStorage.setItem("gamesPlayed", gamesPlayed);
+
+      let highestScore = localStorage.getItem("highestScore") || Infinity;
+      if (guessesRemaining < highestScore) {
+        localStorage.setItem("highestScore", guessesRemaining);
+      }
+
+      let totalGuesses = localStorage.getItem("totalGuesses") || 0;
+      totalGuesses = parseInt(totalGuesses) + (5 - guessesRemaining);
+      localStorage.setItem("totalGuesses", totalGuesses);
+
+      let meanScore = totalGuesses / gamesPlayed;
+      localStorage.setItem("meanScore", meanScore.toFixed(2));
+    }
+
+    window.onload = function() {
+      // Load statistics for display if needed
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
